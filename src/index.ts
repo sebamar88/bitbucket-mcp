@@ -15,18 +15,12 @@ const logger = setupLogger();
 // Bitbucket MCP Server class
 class BitbucketMcpServer {
   private readonly server: McpServer;
-  private readonly api: AxiosInstance | null = null;
 
   constructor() {
     // Initialize the MCP server
     this.server = new McpServer({
       name: "bitbucket-mcp",
       version: "1.0.0",
-    });
-
-    // Add server error handling
-    logger.on("error", (error: Error) => {
-      logger.error("Server error", { error });
     });
 
     this.setupTools();
@@ -194,74 +188,30 @@ class BitbucketMcpServer {
     );
   }
 
+  // Method to run the server with StdioTransport
+  public async run() {
+    logger.info("Running Bitbucket MCP server with stdio transport");
+    const stdioTransport = new StdioServerTransport();
+    try {
+      await this.server.connect(stdioTransport);
+      logger.info("Bitbucket MCP server connected via stdio");
+    } catch (error) {
+      logger.error("Error connecting stdio transport", { error });
+      process.exit(1);
+    }
+  }
+
   // Method to get the McpServer instance
   public getServer(): McpServer {
     return this.server;
   }
 }
 
-// Create Bitbucket MCP Server instance
+// Create and run the Bitbucket MCP Server instance
 const bitbucketMcpServer = new BitbucketMcpServer();
-const server = bitbucketMcpServer.getServer();
 
-// Express server setup
-const app = express();
-app.use(express.json());
-
-// Initialize standalone mode if requested
-if (process.env.STANDALONE === "true") {
-  logger.info("Running in standalone mode with stdio transport");
-
-  const stdioTransport = new StdioServerTransport();
-  server.connect(stdioTransport).catch((error) => {
-    logger.error("Error connecting stdio transport", { error });
-    process.exit(1);
-  });
-} else {
-  // HTTP server mode
-  // MCP endpoint
-  app.all("/mcp", (req, res) => {
-    logger.info("Received MCP request", {
-      method: req.method,
-      path: req.path,
-      accept: req.headers.accept,
-      contentType: req.headers["content-type"],
-    });
-
-    try {
-      // Create transport with a session ID generator
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-      });
-
-      // Connect the transport to the server (must be done before handling requests)
-      server.connect(transport);
-
-      // Handle the request (this passes it to the connected server)
-      transport.handleRequest(req, res, req.body);
-
-      logger.info("Transport connected to server");
-    } catch (error) {
-      logger.error("Error handling MCP request", { error });
-
-      // Only send response if headers haven't been sent yet
-      if (!res.headersSent) {
-        res.status(500).json({
-          error: "Internal server error",
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-  });
-
-  // Health endpoint
-  app.get("/health", (req, res) => {
-    res.status(200).json({ status: "ok" });
-  });
-
-  // Start server
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    logger.info(`Bitbucket MCP server listening on port ${PORT}`);
-  });
-}
+// Start the server using the run method
+bitbucketMcpServer.run().catch((error) => {
+  logger.error("Failed to run Bitbucket MCP server", { error });
+  process.exit(1);
+});
