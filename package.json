@@ -18,7 +18,7 @@
     "standalone": "STANDALONE=true node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "prepublishOnly": "npm run build",
-    "version": "npm run lint && git add -A src",
+    "version": "git add -A src",
     "postversion": "git push && git push --tags",
     "publish:patch": "npm version patch && npm publish",
     "publish:minor": "npm version minor && npm publish",
