@@ -1,17 +1,337 @@
 #!/usr/bin/env node
-import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
-import { randomUUID } from "crypto";
-import { setupLogger } from "./utils/logger.js";
-import { getBitbucketAPI } from "./services/bitbucket.js";
+import winston from "winston";
+
+// =========== TYPE DEFINITIONS ===========
+/**
+ * Represents a Bitbucket repository
+ */
+interface BitbucketRepository {
+  uuid: string;
+  name: string;
+  full_name: string;
+  description: string;
+  is_private: boolean;
+  created_on: string;
+  updated_on: string;
+  size: number;
+  language: string;
+  has_issues: boolean;
+  has_wiki: boolean;
+  fork_policy: string;
+  owner: BitbucketAccount;
+  workspace: BitbucketWorkspace;
+  project: BitbucketProject;
+  mainbranch?: BitbucketBranch;
+  website?: string;
+  scm: string;
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket account (user or team)
+ */
+interface BitbucketAccount {
+  uuid: string;
+  display_name: string;
+  account_id: string;
+  nickname?: string;
+  type: "user" | "team";
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket workspace
+ */
+interface BitbucketWorkspace {
+  uuid: string;
+  name: string;
+  slug: string;
+  type: "workspace";
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket project
+ */
+interface BitbucketProject {
+  uuid: string;
+  key: string;
+  name: string;
+  description?: string;
+  is_private: boolean;
+  type: "project";
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket branch reference
+ */
+interface BitbucketBranch {
+  name: string;
+  type: "branch";
+}
+
+/**
+ * Represents a hyperlink in Bitbucket API responses
+ */
+interface BitbucketLink {
+  href: string;
+  name?: string;
+}
+
+/**
+ * Represents a Bitbucket pull request
+ */
+interface BitbucketPullRequest {
+  id: number;
+  title: string;
+  description: string;
+  state: "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED";
+  author: BitbucketAccount;
+  source: BitbucketBranchReference;
+  destination: BitbucketBranchReference;
+  created_on: string;
+  updated_on: string;
+  closed_on?: string;
+  comment_count: number;
+  task_count: number;
+  close_source_branch: boolean;
+  reviewers: BitbucketAccount[];
+  participants: BitbucketParticipant[];
+  links: Record<string, BitbucketLink[]>;
+  summary?: {
+    raw: string;
+    markup: string;
+    html: string;
+  };
+}
+
+/**
+ * Represents a branch reference in a pull request
+ */
+interface BitbucketBranchReference {
+  branch: {
+    name: string;
+  };
+  commit: {
+    hash: string;
+  };
+  repository: BitbucketRepository;
+}
+
+/**
+ * Represents a participant in a pull request
+ */
+interface BitbucketParticipant {
+  user: BitbucketAccount;
+  role: "PARTICIPANT" | "REVIEWER";
+  approved: boolean;
+  state?: "approved" | "changes_requested" | null;
+  participated_on: string;
+}
+
+// =========== LOGGER SETUP ===========
+/**
+ * Sets up a Winston logger with console and file transports
+ */
+function setupLogger() {
+  // Define transports array with the correct type
+  const transports: winston.transport[] = [
+    // File transport for errors
+    new winston.transports.File({
+      filename: "logs/error.log",
+      level: "error",
+    }),
+    new winston.transports.File({
+      filename: "logs/combined.log",
+    }),
+  ];
+
+  // Only use stderr for console output when running in stdio mode to avoid conflicting with MCP transport
+  // This prevents logger output from mixing with MCP messages on stdout
+  transports.push(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
+      stderrLevels: ["error", "warn", "info", "debug", "silly"], // Redirect ALL console output to stderr
+    })
+  );
+
+  return winston.createLogger({
+    level: process.env.LOG_LEVEL || "info",
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    ),
+    defaultMeta: { service: "bitbucket-mcp" },
+    transports,
+  });
+}
 
 // Setup logger
 const logger = setupLogger();
 
+// =========== BITBUCKET API ===========
+/**
+ * BitbucketAPI class for interacting with Bitbucket Cloud REST API
+ */
+class BitbucketAPI {
+  private axios: AxiosInstance;
+  private baseUrl: string;
+  private authenticated: boolean = false;
+
+  /**
+   * Creates an instance of BitbucketAPI
+   * @param token Optional access token for authenticated requests
+   * @param baseUrl Base URL for Bitbucket API, defaults to cloud API
+   */
+  constructor(
+    token?: string,
+    baseUrl: string = "https://api.bitbucket.org/2.0"
+  ) {
+    this.baseUrl = baseUrl;
+
+    this.axios = axios.create({
+      baseURL: this.baseUrl,
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          }
+        : {
+            "Content-Type": "application/json",
+          },
+    });
+
+    this.authenticated = !!token;
+
+    // Add response interceptor for logging
+    this.axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        logger.error("Bitbucket API error", {
+          status: error.response?.status,
+          message: error.message,
+          data: error.response?.data,
+          url: error.config?.url,
+        });
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  /**
+   * List repositories for a workspace
+   * @param workspace Bitbucket workspace name (optional)
+   * @param limit Maximum number of repositories to return
+   * @returns Array of repository objects
+   */
+  async listRepositories(
+    workspace?: string,
+    limit: number = 10
+  ): Promise<BitbucketRepository[]> {
+    try {
+      // If workspace is specified, get repos for that workspace
+      if (workspace) {
+        const response = await this.axios.get(`/repositories/${workspace}`, {
+          params: { limit },
+        });
+        return response.data.values;
+      }
+
+      // Without workspace, get all accessible repositories (requires auth)
+      if (!this.authenticated) {
+        throw new Error(
+          "Authentication required to list repositories without specifying a workspace"
+        );
+      }
+
+      const response = await this.axios.get("/repositories", {
+        params: { limit },
+      });
+      return response.data.values;
+    } catch (error) {
+      logger.error("Error listing repositories", { error, workspace });
+      throw error;
+    }
+  }
+
+  /**
+   * Get repository details
+   * @param workspace Bitbucket workspace name
+   * @param repo_slug Repository slug
+   * @returns Repository object
+   */
+  async getRepository(
+    workspace: string,
+    repo_slug: string
+  ): Promise<BitbucketRepository> {
+    try {
+      const response = await this.axios.get(
+        `/repositories/${workspace}/${repo_slug}`
+      );
+      return response.data;
+    } catch (error) {
+      logger.error("Error getting repository", { error, workspace, repo_slug });
+      throw error;
+    }
+  }
+
+  /**
+   * Get pull requests for a repository
+   * @param workspace Bitbucket workspace name
+   * @param repo_slug Repository slug
+   * @param state Filter by pull request state
+   * @param limit Maximum number of pull requests to return
+   * @returns Array of pull request objects
+   */
+  async getPullRequests(
+    workspace: string,
+    repo_slug: string,
+    state?: "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED",
+    limit: number = 10
+  ): Promise<BitbucketPullRequest[]> {
+    try {
+      const response = await this.axios.get(
+        `/repositories/${workspace}/${repo_slug}/pullrequests`,
+        {
+          params: {
+            state: state,
+            limit,
+          },
+        }
+      );
+      return response.data.values;
+    } catch (error) {
+      logger.error("Error getting pull requests", {
+        error,
+        workspace,
+        repo_slug,
+      });
+      throw error;
+    }
+  }
+}
+
+/**
+ * Factory function to get a BitbucketAPI instance
+ * Uses environment variables for configuration if available
+ */
+async function getBitbucketAPI(): Promise<BitbucketAPI> {
+  const token = process.env.BITBUCKET_TOKEN;
+  const baseUrl =
+    process.env.BITBUCKET_API_URL || "https://api.bitbucket.org/2.0";
+
+  return new BitbucketAPI(token, baseUrl);
+}
+
+// =========== MCP SERVER ===========
 // Bitbucket MCP Server class
 class BitbucketMcpServer {
   private readonly server: McpServer;
@@ -207,6 +527,7 @@ class BitbucketMcpServer {
   }
 }
 
+// =========== MAIN ===========
 // Create and run the Bitbucket MCP Server instance
 const bitbucketMcpServer = new BitbucketMcpServer();
 
