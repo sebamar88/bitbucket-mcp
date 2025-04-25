@@ -124,9 +124,11 @@ If you're developing locally and want to test your changes:
 
 ## Available Tools
 
-This MCP server provides the following tools:
+This MCP server provides tools for interacting with Bitbucket repositories and pull requests. Below is a comprehensive list of the available operations:
 
-### `listRepositories`
+### Repository Operations
+
+#### `listRepositories`
 
 Lists repositories in a workspace.
 
@@ -135,7 +137,7 @@ Lists repositories in a workspace.
 - `workspace` (optional): Bitbucket workspace name
 - `limit` (optional): Maximum number of repositories to return
 
-### `getRepository`
+#### `getRepository`
 
 Gets details for a specific repository.
 
@@ -144,7 +146,9 @@ Gets details for a specific repository.
 - `workspace`: Bitbucket workspace name
 - `repo_slug`: Repository slug
 
-### `getPullRequests`
+### Pull Request Operations
+
+#### `getPullRequests`
 
 Gets pull requests for a repository.
 
@@ -154,6 +158,308 @@ Gets pull requests for a repository.
 - `repo_slug`: Repository slug
 - `state` (optional): Pull request state (`OPEN`, `MERGED`, `DECLINED`, `SUPERSEDED`)
 - `limit` (optional): Maximum number of pull requests to return
+
+#### `createPullRequest`
+
+Creates a new pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `title`: Pull request title
+- `description`: Pull request description
+- `sourceBranch`: Source branch name
+- `targetBranch`: Target branch name
+- `reviewers` (optional): List of reviewer usernames
+
+#### `getPullRequest`
+
+Gets details for a specific pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `updatePullRequest`
+
+Updates a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- Various optional update parameters (title, description, etc.)
+
+#### `getPullRequestActivity`
+
+Gets the activity log for a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `approvePullRequest`
+
+Approves a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `unapprovePullRequest`
+
+Removes an approval from a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `declinePullRequest`
+
+Declines a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `message` (optional): Reason for declining
+
+#### `mergePullRequest`
+
+Merges a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `message` (optional): Merge commit message
+- `strategy` (optional): Merge strategy (`merge-commit`, `squash`, `fast-forward`)
+
+#### `requestChanges`
+
+Requests changes on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `removeChangeRequest`
+
+Removes a change request from a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+### Pull Request Comment Operations
+
+#### `getPullRequestComments`
+
+Lists comments on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `createPullRequestComment`
+
+Creates a comment on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `content`: Comment content
+- `inline` (optional): Inline comment information
+
+#### `getPullRequestComment`
+
+Gets a specific comment on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `comment_id`: Comment ID
+
+#### `updatePullRequestComment`
+
+Updates a comment on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `comment_id`: Comment ID
+- `content`: Updated comment content
+
+#### `deletePullRequestComment`
+
+Deletes a comment on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `comment_id`: Comment ID
+
+#### `resolveComment`
+
+Resolves a comment thread on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `comment_id`: Comment ID
+
+#### `reopenComment`
+
+Reopens a resolved comment thread on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `comment_id`: Comment ID
+
+### Pull Request Diff Operations
+
+#### `getPullRequestDiff`
+
+Gets the diff for a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `getPullRequestDiffStat`
+
+Gets the diff statistics for a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `getPullRequestPatch`
+
+Gets the patch for a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+### Pull Request Task Operations
+
+#### `getPullRequestTasks`
+
+Lists tasks on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `createPullRequestTask`
+
+Creates a task on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `content`: Task content
+- `comment` (optional): Comment ID to associate with the task
+- `pending` (optional): Whether the task is pending
+
+#### `getPullRequestTask`
+
+Gets a specific task on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `task_id`: Task ID
+
+#### `updatePullRequestTask`
+
+Updates a task on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `task_id`: Task ID
+- `content` (optional): Updated task content
+- `state` (optional): Updated task state
+
+#### `deletePullRequestTask`
+
+Deletes a task on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+- `task_id`: Task ID
+
+### Other Pull Request Operations
+
+#### `getPullRequestCommits`
+
+Lists commits on a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
+
+#### `getPullRequestStatuses`
+
+Lists commit statuses for a pull request.
+
+**Parameters:**
+
+- `workspace`: Bitbucket workspace name
+- `repo_slug`: Repository slug
+- `pull_request_id`: Pull request ID
 
 ## Development
 
@@ -188,3 +494,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [GitHub Repository](https://github.com/MatanYemini/bitbucket-mcp)
 - [npm Package](https://www.npmjs.com/package/bitbucket-mcp)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Bitbucket REST API - Pull Requests](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/)
