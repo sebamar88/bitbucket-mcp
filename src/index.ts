@@ -1,9 +1,22 @@
 #!/usr/bin/env node
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError,
+} from "@modelcontextprotocol/sdk/types.js";
 import axios, { AxiosInstance } from "axios";
-import { z } from "zod";
 import winston from "winston";
+
+// =========== LOGGER SETUP ===========
+// Simple logger that only writes to a file (no stdout pollution)
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  transports: [new winston.transports.File({ filename: "bitbucket.log" })],
+});
 
 // =========== TYPE DEFINITIONS ===========
 /**
@@ -134,171 +147,268 @@ interface BitbucketParticipant {
   participated_on: string;
 }
 
-// =========== LOGGER SETUP ===========
-/**
- * Sets up a Winston logger with console and file transports
- */
-function setupLogger() {
-  // Define transports array with the correct type
-  const transports: winston.transport[] = [
-    // File transport for errors
-    new winston.transports.File({
-      filename: "logs/error.log",
-      level: "error",
-    }),
-    new winston.transports.File({
-      filename: "logs/combined.log",
-    }),
-  ];
-
-  // Only use stderr for console output when running in stdio mode to avoid conflicting with MCP transport
-  // This prevents logger output from mixing with MCP messages on stdout
-  transports.push(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      ),
-      stderrLevels: ["error", "warn", "info", "debug", "silly"], // Redirect ALL console output to stderr
-    })
-  );
-
-  return winston.createLogger({
-    level: process.env.LOG_LEVEL || "info",
-    format: winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json()
-    ),
-    defaultMeta: { service: "bitbucket-mcp" },
-    transports,
-  });
+interface BitbucketConfig {
+  baseUrl: string;
+  token?: string;
+  username?: string;
+  password?: string;
+  defaultWorkspace?: string;
 }
 
-// Setup logger
-const logger = setupLogger();
+// =========== MCP SERVER ===========
+class BitbucketServer {
+  private readonly server: Server;
+  private readonly api: AxiosInstance;
+  private readonly config: BitbucketConfig;
 
-// =========== BITBUCKET API ===========
-/**
- * BitbucketAPI class for interacting with Bitbucket Cloud REST API
- */
-class BitbucketAPI {
-  private axios: AxiosInstance;
-  private baseUrl: string;
-  private authenticated: boolean = false;
-
-  /**
-   * Creates an instance of BitbucketAPI
-   * @param token Optional access token for authenticated requests
-   * @param baseUrl Base URL for Bitbucket API, defaults to cloud API
-   */
-  constructor(
-    token?: string,
-    baseUrl: string = "https://api.bitbucket.org/2.0"
-  ) {
-    this.baseUrl = baseUrl;
-
-    this.axios = axios.create({
-      baseURL: this.baseUrl,
-      headers: token
-        ? {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          }
-        : {
-            "Content-Type": "application/json",
-          },
-    });
-
-    this.authenticated = !!token;
-
-    // Add response interceptor for logging
-    this.axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        logger.error("Bitbucket API error", {
-          status: error.response?.status,
-          message: error.message,
-          data: error.response?.data,
-          url: error.config?.url,
-        });
-        return Promise.reject(error);
+  constructor() {
+    // Initialize with the older Server class pattern
+    this.server = new Server(
+      {
+        name: "bitbucket-mcp-server",
+        version: "1.0.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
       }
     );
+
+    // Configuration from environment variables
+    this.config = {
+      baseUrl: process.env.BITBUCKET_URL ?? "https://api.bitbucket.org/2.0",
+      token: process.env.BITBUCKET_TOKEN,
+      username: process.env.BITBUCKET_USERNAME,
+      password: process.env.BITBUCKET_PASSWORD,
+      defaultWorkspace: process.env.BITBUCKET_WORKSPACE,
+    };
+
+    // Validate required config
+    if (!this.config.baseUrl) {
+      throw new Error("BITBUCKET_URL is required");
+    }
+
+    if (!this.config.token && !(this.config.username && this.config.password)) {
+      throw new Error(
+        "Either BITBUCKET_TOKEN or BITBUCKET_USERNAME/PASSWORD is required"
+      );
+    }
+
+    // Setup Axios instance
+    this.api = axios.create({
+      baseURL: this.config.baseUrl,
+      headers: this.config.token
+        ? { Authorization: `Bearer ${this.config.token}` }
+        : { "Content-Type": "application/json" },
+      auth:
+        this.config.username && this.config.password
+          ? { username: this.config.username, password: this.config.password }
+          : undefined,
+    });
+
+    // Setup tool handlers using the request handler pattern
+    this.setupToolHandlers();
+
+    // Add error handler - CRITICAL for stability
+    this.server.onerror = (error) => logger.error("[MCP Error]", error);
   }
 
-  /**
-   * List repositories for a workspace
-   * @param workspace Bitbucket workspace name (optional)
-   * @param limit Maximum number of repositories to return
-   * @returns Array of repository objects
-   */
-  async listRepositories(
-    workspace?: string,
-    limit: number = 10
-  ): Promise<BitbucketRepository[]> {
-    try {
-      // If workspace is specified, get repos for that workspace
-      if (workspace) {
-        const response = await this.axios.get(`/repositories/${workspace}`, {
-          params: { limit },
-        });
-        return response.data.values;
-      }
+  private setupToolHandlers() {
+    // Register the list tools handler
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: [
+        {
+          name: "listRepositories",
+          description: "List Bitbucket repositories",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of repositories to return",
+              },
+            },
+          },
+        },
+        {
+          name: "getRepository",
+          description: "Get repository details",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+        {
+          name: "getPullRequests",
+          description: "Get pull requests for a repository",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+              state: {
+                type: "string",
+                enum: ["OPEN", "MERGED", "DECLINED", "SUPERSEDED"],
+                description: "Pull request state",
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of pull requests to return",
+              },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+      ],
+    }));
 
-      // Without workspace, get all accessible repositories (requires auth)
-      if (!this.authenticated) {
-        throw new Error(
-          "Authentication required to list repositories without specifying a workspace"
+    // Register the call tool handler
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      try {
+        logger.info(`Called tool: ${request.params.name}`, {
+          arguments: request.params.arguments,
+        });
+        const args = request.params.arguments ?? {};
+
+        switch (request.params.name) {
+          case "listRepositories":
+            return await this.listRepositories(
+              args.workspace as string,
+              args.limit as number
+            );
+          case "getRepository":
+            return await this.getRepository(
+              args.workspace as string,
+              args.repo_slug as string
+            );
+          case "getPullRequests":
+            return await this.getPullRequests(
+              args.workspace as string,
+              args.repo_slug as string,
+              args.state as "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED",
+              args.limit as number
+            );
+          default:
+            throw new McpError(
+              ErrorCode.MethodNotFound,
+              `Unknown tool: ${request.params.name}`
+            );
+        }
+      } catch (error) {
+        logger.error("Tool execution error", { error });
+        if (axios.isAxiosError(error)) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Bitbucket API error: ${
+              error.response?.data.message ?? error.message
+            }`
+          );
+        }
+        throw error;
+      }
+    });
+  }
+
+  async listRepositories(workspace?: string, limit: number = 10) {
+    try {
+      // Use default workspace if not provided
+      const wsName = workspace || this.config.defaultWorkspace;
+
+      if (!wsName) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          "Workspace must be provided either as a parameter or through BITBUCKET_WORKSPACE environment variable"
         );
       }
 
-      const response = await this.axios.get("/repositories", {
+      logger.info("Listing Bitbucket repositories", {
+        workspace: wsName,
+        limit,
+      });
+
+      const response = await this.api.get(`/repositories/${wsName}`, {
         params: { limit },
       });
-      return response.data.values;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data.values, null, 2),
+          },
+        ],
+      };
     } catch (error) {
       logger.error("Error listing repositories", { error, workspace });
-      throw error;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list repositories: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
-  /**
-   * Get repository details
-   * @param workspace Bitbucket workspace name
-   * @param repo_slug Repository slug
-   * @returns Repository object
-   */
-  async getRepository(
-    workspace: string,
-    repo_slug: string
-  ): Promise<BitbucketRepository> {
+  async getRepository(workspace: string, repo_slug: string) {
     try {
-      const response = await this.axios.get(
+      logger.info("Getting Bitbucket repository info", {
+        workspace,
+        repo_slug,
+      });
+
+      const response = await this.api.get(
         `/repositories/${workspace}/${repo_slug}`
       );
-      return response.data;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
     } catch (error) {
       logger.error("Error getting repository", { error, workspace, repo_slug });
-      throw error;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get repository: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
-  /**
-   * Get pull requests for a repository
-   * @param workspace Bitbucket workspace name
-   * @param repo_slug Repository slug
-   * @param state Filter by pull request state
-   * @param limit Maximum number of pull requests to return
-   * @returns Array of pull request objects
-   */
   async getPullRequests(
     workspace: string,
     repo_slug: string,
     state?: "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED",
     limit: number = 10
-  ): Promise<BitbucketPullRequest[]> {
+  ) {
     try {
-      const response = await this.axios.get(
+      logger.info("Getting Bitbucket pull requests", {
+        workspace,
+        repo_slug,
+        state,
+        limit,
+      });
+
+      const response = await this.api.get(
         `/repositories/${workspace}/${repo_slug}/pullrequests`,
         {
           params: {
@@ -307,232 +417,40 @@ class BitbucketAPI {
           },
         }
       );
-      return response.data.values;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data.values, null, 2),
+          },
+        ],
+      };
     } catch (error) {
       logger.error("Error getting pull requests", {
         error,
         workspace,
         repo_slug,
       });
-      throw error;
-    }
-  }
-}
-
-/**
- * Factory function to get a BitbucketAPI instance
- * Uses environment variables for configuration if available
- */
-async function getBitbucketAPI(): Promise<BitbucketAPI> {
-  const token = process.env.BITBUCKET_TOKEN;
-  const baseUrl =
-    process.env.BITBUCKET_API_URL || "https://api.bitbucket.org/2.0";
-
-  return new BitbucketAPI(token, baseUrl);
-}
-
-// =========== MCP SERVER ===========
-// Bitbucket MCP Server class
-class BitbucketMcpServer {
-  private readonly server: McpServer;
-
-  constructor() {
-    // Initialize the MCP server
-    this.server = new McpServer({
-      name: "bitbucket-mcp",
-      version: "1.0.0",
-    });
-
-    this.setupTools();
-  }
-
-  private setupTools() {
-    // Register bitbucket repository tools
-    this.server.tool(
-      "listRepositories",
-      {
-        workspace: z.string().optional().describe("Bitbucket workspace name"),
-        limit: z
-          .number()
-          .optional()
-          .describe("Maximum number of repositories to return"),
-      },
-      async ({ workspace, limit }, extra) => {
-        logger.info("Listing Bitbucket repositories", { workspace, limit });
-        try {
-          const bitbucketAPI = await getBitbucketAPI();
-          const repositories = await bitbucketAPI.listRepositories(
-            workspace,
-            limit
-          );
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Found ${repositories.length} repositories${
-                  workspace ? ` in workspace ${workspace}` : ""
-                }`,
-              },
-              {
-                type: "text",
-                text: JSON.stringify(repositories, null, 2),
-              },
-            ],
-          };
-        } catch (error) {
-          logger.error("Error listing repositories", { error });
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error listing repositories: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
-              },
-            ],
-          };
-        }
-      }
-    );
-
-    this.server.tool(
-      "getRepository",
-      {
-        workspace: z.string().describe("Bitbucket workspace name"),
-        repo_slug: z.string().describe("Repository slug"),
-      },
-      async ({ workspace, repo_slug }, extra) => {
-        logger.info("Getting Bitbucket repository info", {
-          workspace,
-          repo_slug,
-        });
-        try {
-          const bitbucketAPI = await getBitbucketAPI();
-          const repository = await bitbucketAPI.getRepository(
-            workspace,
-            repo_slug
-          );
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Repository: ${repository.name}`,
-              },
-              {
-                type: "text",
-                text: JSON.stringify(repository, null, 2),
-              },
-            ],
-          };
-        } catch (error) {
-          logger.error("Error getting repository", {
-            error,
-            workspace,
-            repo_slug,
-          });
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error getting repository: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
-              },
-            ],
-          };
-        }
-      }
-    );
-
-    this.server.tool(
-      "getPullRequests",
-      {
-        workspace: z.string().describe("Bitbucket workspace name"),
-        repo_slug: z.string().describe("Repository slug"),
-        state: z
-          .enum(["OPEN", "MERGED", "DECLINED", "SUPERSEDED"])
-          .optional()
-          .describe("Pull request state"),
-        limit: z
-          .number()
-          .optional()
-          .describe("Maximum number of pull requests to return"),
-      },
-      async ({ workspace, repo_slug, state, limit }, extra) => {
-        logger.info("Getting Bitbucket pull requests", {
-          workspace,
-          repo_slug,
-          state,
-          limit,
-        });
-        try {
-          const bitbucketAPI = await getBitbucketAPI();
-          const pullRequests = await bitbucketAPI.getPullRequests(
-            workspace,
-            repo_slug,
-            state,
-            limit
-          );
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Found ${pullRequests.length} pull requests${
-                  state ? ` with state ${state}` : ""
-                }`,
-              },
-              {
-                type: "text",
-                text: JSON.stringify(pullRequests, null, 2),
-              },
-            ],
-          };
-        } catch (error) {
-          logger.error("Error getting pull requests", {
-            error,
-            workspace,
-            repo_slug,
-          });
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error getting pull requests: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
-              },
-            ],
-          };
-        }
-      }
-    );
-  }
-
-  // Method to run the server with StdioTransport
-  public async run() {
-    logger.info("Running Bitbucket MCP server with stdio transport");
-    const stdioTransport = new StdioServerTransport();
-    try {
-      await this.server.connect(stdioTransport);
-      logger.info("Bitbucket MCP server connected via stdio");
-    } catch (error) {
-      logger.error("Error connecting stdio transport", { error });
-      process.exit(1);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get pull requests: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
-  // Method to get the McpServer instance
-  public getServer(): McpServer {
-    return this.server;
+  async run() {
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+    logger.info("Bitbucket MCP server running on stdio");
   }
 }
 
-// =========== MAIN ===========
-// Create and run the Bitbucket MCP Server instance
-const bitbucketMcpServer = new BitbucketMcpServer();
-
-// Start the server using the run method
-bitbucketMcpServer.run().catch((error) => {
-  logger.error("Failed to run Bitbucket MCP server", { error });
+// Create and start the server
+const server = new BitbucketServer();
+server.run().catch((error) => {
+  logger.error("Server error", error);
   process.exit(1);
 });
