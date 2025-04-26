@@ -13,7 +13,7 @@ Every pull request is analyzed with CodeQL to ensure the code remains secure.
 [![smithery badge](https://smithery.ai/badge/@MatanYemini/bitbucket-mcp)](https://smithery.ai/server/@MatanYemini/bitbucket-mcp)
 
 ## Overview
-
+Checkout out the [official npm package](https://www.npmjs.com/package/bitbucket-mcp)
 This server implements the Model Context Protocol standard to provide AI assistants with access to Bitbucket data and operations. It includes tools for:
 
 - Listing and retrieving repositories
