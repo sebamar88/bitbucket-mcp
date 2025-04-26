@@ -40,11 +40,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/bitbucket-mcp.git"
+    "url": "git+https://github.com/MatanYemini/bitbucket-mcp"
   },
-  "homepage": "https://github.com/yourusername/bitbucket-mcp#readme",
+  "homepage": "https://github.com/MatanYemini/bitbucket-mcp#readme",
   "bugs": {
-    "url": "https://github.com/yourusername/bitbucket-mcp/issues"
+    "url": "https://github.com/MatanYemini/bitbucket-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.1",
