@@ -2,12 +2,18 @@
 
 A Model Context Protocol (MCP) server for integrating with Bitbucket Cloud and Server APIs. This MCP server enables AI assistants like Cursor to interact with your Bitbucket repositories, pull requests, and other resources.
 
+## Safety First
+This is a safe and responsible package — no DELETE operations are used, so there’s no risk of data loss.
+Every pull request is analyzed with CodeQL to ensure the code remains secure.
+
+[![CodeQL](https://github.com/MatanYemini/bitbucket-mcp/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/MatanYemini/bitbucket-mcp/actions/workflows/github-code-scanning/codeql)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/MatanYemini/bitbucket-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![npm version](https://badge.fury.io/js/bitbucket-mcp.svg)](https://www.npmjs.com/package/bitbucket-mcp)
+[![smithery badge](https://smithery.ai/badge/@MatanYemini/bitbucket-mcp)](https://smithery.ai/server/@MatanYemini/bitbucket-mcp)
 
 ## Overview
-
+Checkout out the [official npm package](https://www.npmjs.com/package/bitbucket-mcp)
 This server implements the Model Context Protocol standard to provide AI assistants with access to Bitbucket data and operations. It includes tools for:
 
 - Listing and retrieving repositories
