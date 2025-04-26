@@ -147,6 +147,72 @@ interface BitbucketParticipant {
   participated_on: string;
 }
 
+/**
+ * Represents a Bitbucket branching model
+ */
+interface BitbucketBranchingModel {
+  type: "branching_model";
+  development: {
+    name: string;
+    branch?: BitbucketBranch;
+    use_mainbranch: boolean;
+  };
+  production?: {
+    name: string;
+    branch?: BitbucketBranch;
+    use_mainbranch: boolean;
+  };
+  branch_types: Array<{
+    kind: string;
+    prefix: string;
+  }>;
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket branching model settings
+ */
+interface BitbucketBranchingModelSettings {
+  type: "branching_model_settings";
+  development: {
+    name: string;
+    use_mainbranch: boolean;
+    is_valid?: boolean;
+  };
+  production: {
+    name: string;
+    use_mainbranch: boolean;
+    enabled: boolean;
+    is_valid?: boolean;
+  };
+  branch_types: Array<{
+    kind: string;
+    prefix: string;
+    enabled: boolean;
+  }>;
+  links: Record<string, BitbucketLink[]>;
+}
+
+/**
+ * Represents a Bitbucket project branching model
+ */
+interface BitbucketProjectBranchingModel {
+  type: "project_branching_model";
+  development: {
+    name: string;
+    use_mainbranch: boolean;
+  };
+  production?: {
+    name: string;
+    use_mainbranch: boolean;
+  };
+  branch_types: Array<{
+    kind: string;
+    prefix: string;
+  }>;
+  links: Record<string, BitbucketLink[]>;
+}
+
 interface BitbucketConfig {
   baseUrl: string;
   token?: string;
@@ -499,7 +565,7 @@ class BitbucketServer {
         },
         {
           name: "getPullRequestCommits",
-          description: "List commits on a pull request",
+          description: "Get commits on a pull request",
           inputSchema: {
             type: "object",
             properties: {
@@ -514,6 +580,201 @@ class BitbucketServer {
               },
             },
             required: ["workspace", "repo_slug", "pull_request_id"],
+          },
+        },
+        {
+          name: "getRepositoryBranchingModel",
+          description: "Get the branching model for a repository",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+        {
+          name: "getRepositoryBranchingModelSettings",
+          description: "Get the branching model config for a repository",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+        {
+          name: "updateRepositoryBranchingModelSettings",
+          description: "Update the branching model config for a repository",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+              development: {
+                type: "object",
+                description: "Development branch settings",
+                properties: {
+                  name: { type: "string", description: "Branch name" },
+                  use_mainbranch: {
+                    type: "boolean",
+                    description: "Use main branch",
+                  },
+                },
+              },
+              production: {
+                type: "object",
+                description: "Production branch settings",
+                properties: {
+                  name: { type: "string", description: "Branch name" },
+                  use_mainbranch: {
+                    type: "boolean",
+                    description: "Use main branch",
+                  },
+                  enabled: {
+                    type: "boolean",
+                    description: "Enable production branch",
+                  },
+                },
+              },
+              branch_types: {
+                type: "array",
+                description: "Branch types configuration",
+                items: {
+                  type: "object",
+                  properties: {
+                    kind: {
+                      type: "string",
+                      description: "Branch type kind (e.g., bugfix, feature)",
+                    },
+                    prefix: { type: "string", description: "Branch prefix" },
+                    enabled: {
+                      type: "boolean",
+                      description: "Enable this branch type",
+                    },
+                  },
+                  required: ["kind"],
+                },
+              },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+        {
+          name: "getEffectiveRepositoryBranchingModel",
+          description: "Get the effective branching model for a repository",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              repo_slug: { type: "string", description: "Repository slug" },
+            },
+            required: ["workspace", "repo_slug"],
+          },
+        },
+        {
+          name: "getProjectBranchingModel",
+          description: "Get the branching model for a project",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              project_key: { type: "string", description: "Project key" },
+            },
+            required: ["workspace", "project_key"],
+          },
+        },
+        {
+          name: "getProjectBranchingModelSettings",
+          description: "Get the branching model config for a project",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              project_key: { type: "string", description: "Project key" },
+            },
+            required: ["workspace", "project_key"],
+          },
+        },
+        {
+          name: "updateProjectBranchingModelSettings",
+          description: "Update the branching model config for a project",
+          inputSchema: {
+            type: "object",
+            properties: {
+              workspace: {
+                type: "string",
+                description: "Bitbucket workspace name",
+              },
+              project_key: { type: "string", description: "Project key" },
+              development: {
+                type: "object",
+                description: "Development branch settings",
+                properties: {
+                  name: { type: "string", description: "Branch name" },
+                  use_mainbranch: {
+                    type: "boolean",
+                    description: "Use main branch",
+                  },
+                },
+              },
+              production: {
+                type: "object",
+                description: "Production branch settings",
+                properties: {
+                  name: { type: "string", description: "Branch name" },
+                  use_mainbranch: {
+                    type: "boolean",
+                    description: "Use main branch",
+                  },
+                  enabled: {
+                    type: "boolean",
+                    description: "Enable production branch",
+                  },
+                },
+              },
+              branch_types: {
+                type: "array",
+                description: "Branch types configuration",
+                items: {
+                  type: "object",
+                  properties: {
+                    kind: {
+                      type: "string",
+                      description: "Branch type kind (e.g., bugfix, feature)",
+                    },
+                    prefix: { type: "string", description: "Branch prefix" },
+                    enabled: {
+                      type: "boolean",
+                      description: "Enable this branch type",
+                    },
+                  },
+                  required: ["kind"],
+                },
+              },
+            },
+            required: ["workspace", "project_key"],
           },
         },
       ],
@@ -619,6 +880,47 @@ class BitbucketServer {
               args.workspace as string,
               args.repo_slug as string,
               args.pull_request_id as string
+            );
+          case "getRepositoryBranchingModel":
+            return await this.getRepositoryBranchingModel(
+              args.workspace as string,
+              args.repo_slug as string
+            );
+          case "getRepositoryBranchingModelSettings":
+            return await this.getRepositoryBranchingModelSettings(
+              args.workspace as string,
+              args.repo_slug as string
+            );
+          case "updateRepositoryBranchingModelSettings":
+            return await this.updateRepositoryBranchingModelSettings(
+              args.workspace as string,
+              args.repo_slug as string,
+              args.development as Record<string, any>,
+              args.production as Record<string, any>,
+              args.branch_types as Array<Record<string, any>>
+            );
+          case "getEffectiveRepositoryBranchingModel":
+            return await this.getEffectiveRepositoryBranchingModel(
+              args.workspace as string,
+              args.repo_slug as string
+            );
+          case "getProjectBranchingModel":
+            return await this.getProjectBranchingModel(
+              args.workspace as string,
+              args.project_key as string
+            );
+          case "getProjectBranchingModelSettings":
+            return await this.getProjectBranchingModelSettings(
+              args.workspace as string,
+              args.project_key as string
+            );
+          case "updateProjectBranchingModelSettings":
+            return await this.updateProjectBranchingModelSettings(
+              args.workspace as string,
+              args.project_key as string,
+              args.development as Record<string, any>,
+              args.production as Record<string, any>,
+              args.branch_types as Array<Record<string, any>>
             );
           default:
             throw new McpError(
@@ -1248,6 +1550,285 @@ class BitbucketServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to get pull request commits: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async getRepositoryBranchingModel(workspace: string, repo_slug: string) {
+    try {
+      logger.info("Getting repository branching model", {
+        workspace,
+        repo_slug,
+      });
+
+      const response = await this.api.get(
+        `/repositories/${workspace}/${repo_slug}/branching-model`
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error getting repository branching model", {
+        error,
+        workspace,
+        repo_slug,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get repository branching model: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async getRepositoryBranchingModelSettings(
+    workspace: string,
+    repo_slug: string
+  ) {
+    try {
+      logger.info("Getting repository branching model settings", {
+        workspace,
+        repo_slug,
+      });
+
+      const response = await this.api.get(
+        `/repositories/${workspace}/${repo_slug}/branching-model/settings`
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error getting repository branching model settings", {
+        error,
+        workspace,
+        repo_slug,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get repository branching model settings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async updateRepositoryBranchingModelSettings(
+    workspace: string,
+    repo_slug: string,
+    development?: Record<string, any>,
+    production?: Record<string, any>,
+    branch_types?: Array<Record<string, any>>
+  ) {
+    try {
+      logger.info("Updating repository branching model settings", {
+        workspace,
+        repo_slug,
+        development,
+        production,
+        branch_types,
+      });
+
+      // Build request data with only the fields that are provided
+      const updateData: Record<string, any> = {};
+      if (development) updateData.development = development;
+      if (production) updateData.production = production;
+      if (branch_types) updateData.branch_types = branch_types;
+
+      const response = await this.api.put(
+        `/repositories/${workspace}/${repo_slug}/branching-model/settings`,
+        updateData
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error updating repository branching model settings", {
+        error,
+        workspace,
+        repo_slug,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update repository branching model settings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async getEffectiveRepositoryBranchingModel(
+    workspace: string,
+    repo_slug: string
+  ) {
+    try {
+      logger.info("Getting effective repository branching model", {
+        workspace,
+        repo_slug,
+      });
+
+      const response = await this.api.get(
+        `/repositories/${workspace}/${repo_slug}/effective-branching-model`
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error getting effective repository branching model", {
+        error,
+        workspace,
+        repo_slug,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get effective repository branching model: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async getProjectBranchingModel(workspace: string, project_key: string) {
+    try {
+      logger.info("Getting project branching model", {
+        workspace,
+        project_key,
+      });
+
+      const response = await this.api.get(
+        `/workspaces/${workspace}/projects/${project_key}/branching-model`
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error getting project branching model", {
+        error,
+        workspace,
+        project_key,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project branching model: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async getProjectBranchingModelSettings(
+    workspace: string,
+    project_key: string
+  ) {
+    try {
+      logger.info("Getting project branching model settings", {
+        workspace,
+        project_key,
+      });
+
+      const response = await this.api.get(
+        `/workspaces/${workspace}/projects/${project_key}/branching-model/settings`
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error getting project branching model settings", {
+        error,
+        workspace,
+        project_key,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project branching model settings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  async updateProjectBranchingModelSettings(
+    workspace: string,
+    project_key: string,
+    development?: Record<string, any>,
+    production?: Record<string, any>,
+    branch_types?: Array<Record<string, any>>
+  ) {
+    try {
+      logger.info("Updating project branching model settings", {
+        workspace,
+        project_key,
+        development,
+        production,
+        branch_types,
+      });
+
+      // Build request data with only the fields that are provided
+      const updateData: Record<string, any> = {};
+      if (development) updateData.development = development;
+      if (production) updateData.production = production;
+      if (branch_types) updateData.branch_types = branch_types;
+
+      const response = await this.api.put(
+        `/workspaces/${workspace}/projects/${project_key}/branching-model/settings`,
+        updateData
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(response.data, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error("Error updating project branching model settings", {
+        error,
+        workspace,
+        project_key,
+      });
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update project branching model settings: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
