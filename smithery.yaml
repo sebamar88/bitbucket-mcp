@@ -25,20 +25,32 @@ startCommand:
       - required: ["BITBUCKET_TOKEN"]
       - required: ["BITBUCKET_USERNAME", "BITBUCKET_PASSWORD"]
   commandFunction: |-
-    (config) => ({
-      "command": "node",
-      "args": [
-        "dist/index.js"
-      ],
-      "env": {
-        "NODE_ENV": "production",
-        "BITBUCKET_URL": config.BITBUCKET_URL,
-        "BITBUCKET_TOKEN": config.BITBUCKET_TOKEN,
-        "BITBUCKET_USERNAME": config.BITBUCKET_USERNAME,
-        "BITBUCKET_PASSWORD": config.BITBUCKET_PASSWORD,
-        "BITBUCKET_WORKSPACE": config.BITBUCKET_WORKSPACE
+    (config) => {
+      // Setup environment variables based on provided config
+      const env = Object.assign({}, process.env);
+      
+      // Set production environment
+      env.NODE_ENV = 'production';
+      
+      // Add Bitbucket configuration
+      if (config.BITBUCKET_URL) {
+        env.BITBUCKET_URL = config.BITBUCKET_URL;
       }
-    })
+      if (config.BITBUCKET_TOKEN) {
+        env.BITBUCKET_TOKEN = config.BITBUCKET_TOKEN;
+      }
+      if (config.BITBUCKET_USERNAME) {
+        env.BITBUCKET_USERNAME = config.BITBUCKET_USERNAME;
+      }
+      if (config.BITBUCKET_PASSWORD) {
+        env.BITBUCKET_PASSWORD = config.BITBUCKET_PASSWORD;
+      }
+      if (config.BITBUCKET_WORKSPACE) {
+        env.BITBUCKET_WORKSPACE = config.BITBUCKET_WORKSPACE;
+      }
+      
+      return { command: 'node', args: ['dist/index.js'], env };
+    }
 build:
   dockerfile: "./Dockerfile"
   dockerBuildPath: "."
