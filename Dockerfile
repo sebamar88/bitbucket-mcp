@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:22-alpine as builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine as production
+FROM node:22-alpine as production
 
 WORKDIR /app
 
@@ -32,6 +32,7 @@ RUN chmod +x ./dist/index.js
 
 # Environment variables
 ENV NODE_ENV=production
+
 ENV PORT=3000
 
 # Expose port

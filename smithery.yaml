@@ -1,0 +1,44 @@
+# Smithery.ai configuration
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      BITBUCKET_URL:
+        type: string
+        description: "Bitbucket API URL (defaults to https://api.bitbucket.org/2.0)"
+        default: "https://api.bitbucket.org/2.0"
+      BITBUCKET_TOKEN:
+        type: string
+        description: "Bitbucket access token for authentication"
+      BITBUCKET_USERNAME:
+        type: string
+        description: "Bitbucket username (used with password authentication)"
+      BITBUCKET_PASSWORD:
+        type: string
+        description: "Bitbucket password (used with username authentication)"
+        format: password
+      BITBUCKET_WORKSPACE:
+        type: string
+        description: "Default Bitbucket workspace to use when not specified"
+    oneOf:
+      - required: ["BITBUCKET_TOKEN"]
+      - required: ["BITBUCKET_USERNAME", "BITBUCKET_PASSWORD"]
+  commandFunction: |-
+    (config) => ({
+      "command": "node",
+      "args": [
+        "dist/index.js"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "BITBUCKET_URL": config.BITBUCKET_URL,
+        "BITBUCKET_TOKEN": config.BITBUCKET_TOKEN,
+        "BITBUCKET_USERNAME": config.BITBUCKET_USERNAME,
+        "BITBUCKET_PASSWORD": config.BITBUCKET_PASSWORD,
+        "BITBUCKET_WORKSPACE": config.BITBUCKET_WORKSPACE
+      }
+    })
+build:
+  dockerfile: "./Dockerfile"
+  dockerBuildPath: "."
