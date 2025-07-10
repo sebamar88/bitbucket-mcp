@@ -17,7 +17,6 @@ const logger = winston.createLogger({
     format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
-        winston.format.json(),
         winston.format.printf((info) => {
             // Additional sanitization to prevent credential leakage
             const sanitized = JSON.stringify(info, (key, value) => {
