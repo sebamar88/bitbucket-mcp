@@ -54,6 +54,9 @@ class SecurityAuditor {
         // Check for sensitive patterns in files
         await this.checkSensitivePatterns();
 
+        // Check critical files with stricter rules
+        await this.checkCriticalFiles();
+
         // Check environment configuration
         await this.checkEnvironmentConfig();
 
@@ -70,14 +73,7 @@ class SecurityAuditor {
     async checkSensitivePatterns() {
         console.log("📝 Checking for sensitive patterns in code...");
 
-        const filesToCheck = [
-            "src/index.ts",
-            "test-simple.cjs",
-            "test-mcp-client.js",
-            "README.md",
-            ".env.example",
-            "package.json",
-        ];
+        const filesToCheck = SECURITY_CHECKS.FILES_TO_CHECK;
 
         for (const file of filesToCheck) {
             const filePath = path.join(__dirname, file);
@@ -87,12 +83,15 @@ class SecurityAuditor {
                 for (const pattern of SECURITY_CHECKS.SENSITIVE_PATTERNS) {
                     const matches = content.match(pattern);
                     if (matches) {
+                        // Critical files get CRITICAL severity, others get HIGH
+                        const isCriticalFile =
+                            SECURITY_CHECKS.CRITICAL_FILES.includes(file);
                         this.issues.push({
                             type: "SENSITIVE_DATA",
                             file: file,
                             pattern: pattern.source,
                             matches: matches.length,
-                            severity: "HIGH",
+                            severity: isCriticalFile ? "CRITICAL" : "HIGH",
                         });
                     }
                 }
@@ -100,6 +99,62 @@ class SecurityAuditor {
         }
 
         console.log("✅ Sensitive pattern check completed");
+    }
+
+    async checkCriticalFiles() {
+        console.log("📝 Checking critical files for security issues...");
+
+        for (const file of SECURITY_CHECKS.CRITICAL_FILES) {
+            const filePath = path.join(__dirname, file);
+            if (fs.existsSync(filePath)) {
+                const content = fs.readFileSync(filePath, "utf-8");
+
+                // Extra strict checks for critical files
+                if (
+                    content.includes("password") ||
+                    content.includes("token") ||
+                    content.includes("secret")
+                ) {
+                    this.warnings.push({
+                        type: "SENSITIVE_KEYWORDS_IN_CRITICAL_FILE",
+                        file: file,
+                        message: `Found sensitive keywords in critical file: ${file}`,
+                        severity: "MEDIUM",
+                    });
+                }
+
+                // Check for any credential-like patterns (more permissive regex)
+                const suspiciousPatterns = [
+                    /[A-Za-z0-9]{32,}/g, // Long alphanumeric strings
+                    /[A-Z0-9]{20,}/g, // Long uppercase strings
+                ];
+
+                for (const pattern of suspiciousPatterns) {
+                    const matches = content.match(pattern);
+                    if (matches && matches.length > 0) {
+                        // Filter out common false positives
+                        const suspiciousMatches = matches.filter(
+                            (match) =>
+                                !match.includes("example") &&
+                                !match.includes("your") &&
+                                !match.includes("placeholder") &&
+                                match.length > 20
+                        );
+
+                        if (suspiciousMatches.length > 0) {
+                            this.warnings.push({
+                                type: "SUSPICIOUS_STRINGS_IN_CRITICAL_FILE",
+                                file: file,
+                                message: `Found ${suspiciousMatches.length} suspicious string(s) in critical file: ${file}`,
+                                severity: "MEDIUM",
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log("✅ Critical files check completed");
     }
 
     async checkEnvironmentConfig() {

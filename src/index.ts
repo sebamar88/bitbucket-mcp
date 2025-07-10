@@ -263,6 +263,27 @@ class BitbucketServer {
     private readonly api: AxiosInstance;
     private readonly config: BitbucketConfig;
 
+    // Common schema snippets to reduce duplication
+    private static readonly REPO_SLUG_SCHEMA = {
+        type: "string" as const,
+        description: "Repository slug",
+    };
+
+    private static readonly WORKSPACE_SCHEMA = {
+        type: "string" as const,
+        description: "Bitbucket workspace name",
+    };
+
+    private static readonly PULL_REQUEST_ID_SCHEMA = {
+        type: "string" as const,
+        description: "Pull request ID",
+    };
+
+    private static readonly PROJECT_KEY_SCHEMA = {
+        type: "string" as const,
+        description: "Project key",
+    };
+
     constructor() {
         // Initialize with the older Server class pattern
         this.server = new Server(
@@ -447,10 +468,7 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
                             limit: {
                                 type: "number",
                                 description:
@@ -465,14 +483,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                         },
                         required: ["workspace", "repo_slug"],
                     },
@@ -483,14 +495,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                             state: {
                                 type: "string",
                                 enum: [
@@ -516,14 +522,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                             title: {
                                 type: "string",
                                 description: "Pull request title",
@@ -562,18 +562,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -584,18 +576,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                             title: {
                                 type: "string",
                                 description: "New pull request title",
@@ -614,18 +598,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -636,18 +612,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -658,18 +626,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -680,18 +640,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                             message: {
                                 type: "string",
                                 description: "Reason for declining",
@@ -706,18 +658,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                             message: {
                                 type: "string",
                                 description: "Merge commit message",
@@ -741,18 +685,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -763,18 +699,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -785,18 +713,10 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
-                            pull_request_id: {
-                                type: "string",
-                                description: "Pull request ID",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
+                            pull_request_id:
+                                BitbucketServer.PULL_REQUEST_ID_SCHEMA,
                         },
                         required: ["workspace", "repo_slug", "pull_request_id"],
                     },
@@ -807,14 +727,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                         },
                         required: ["workspace", "repo_slug"],
                     },
@@ -826,14 +740,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                         },
                         required: ["workspace", "repo_slug"],
                     },
@@ -845,14 +753,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                             development: {
                                 type: "object",
                                 description: "Development branch settings",
@@ -920,14 +822,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            repo_slug: {
-                                type: "string",
-                                description: "Repository slug",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            repo_slug: BitbucketServer.REPO_SLUG_SCHEMA,
                         },
                         required: ["workspace", "repo_slug"],
                     },
@@ -938,14 +834,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            project_key: {
-                                type: "string",
-                                description: "Project key",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            project_key: BitbucketServer.PROJECT_KEY_SCHEMA,
                         },
                         required: ["workspace", "project_key"],
                     },
@@ -956,14 +846,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            project_key: {
-                                type: "string",
-                                description: "Project key",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            project_key: BitbucketServer.PROJECT_KEY_SCHEMA,
                         },
                         required: ["workspace", "project_key"],
                     },
@@ -975,14 +859,8 @@ class BitbucketServer {
                     inputSchema: {
                         type: "object",
                         properties: {
-                            workspace: {
-                                type: "string",
-                                description: "Bitbucket workspace name",
-                            },
-                            project_key: {
-                                type: "string",
-                                description: "Project key",
-                            },
+                            workspace: BitbucketServer.WORKSPACE_SCHEMA,
+                            project_key: BitbucketServer.PROJECT_KEY_SCHEMA,
                             development: {
                                 type: "object",
                                 description: "Development branch settings",
