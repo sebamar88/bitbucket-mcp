@@ -327,6 +327,9 @@ class SecurityAuditor {
     }
 }
 
+// Export the SecurityAuditor class for testing
+export { SecurityAuditor };
+
 // Run the audit
 const auditor = new SecurityAuditor();
 auditor.audit().catch((error) => {

@@ -2,9 +2,12 @@
  * Simple Bitbucket authentication test - CommonJS version
  */
 
-console.log("🔐 Iniciando prueba de autenticación de Bitbucket...\n");
+// Load environment variables first (override system env vars)
+require("dotenv").config({ override: true });
 
-// Verificar variables de entorno
+console.log("🔐 Starting Bitbucket authentication test...\n");
+
+// Check environment variables
 const config = {
     baseUrl: process.env.BITBUCKET_URL || "https://api.bitbucket.org/2.0",
     username: process.env.BITBUCKET_USERNAME,
@@ -12,7 +15,7 @@ const config = {
     workspace: process.env.BITBUCKET_WORKSPACE,
 };
 
-console.log("📋 Configuración:");
+console.log("📋 Configuration:");
 console.log(`   Base URL: ${config.baseUrl}`);
 console.log(
     `   Username: ${config.username ? "[CONFIGURED]" : "[NOT CONFIGURED]"}`
@@ -26,14 +29,14 @@ console.log(
 console.log("");
 
 if (!config.username || !config.password) {
-    console.error("❌ Error: Faltan credenciales");
+    console.error("❌ Error: Missing credentials");
     console.error("   BITBUCKET_USERNAME:", config.username ? "✓" : "✗");
     console.error("   BITBUCKET_PASSWORD:", config.password ? "✓" : "✗");
     process.exit(1);
 }
 
-// Test básico con axios
-console.log("📡 Probando conexión con Bitbucket API...");
+// Basic test with axios
+console.log("📡 Testing connection with Bitbucket API...");
 
 const axios = require("axios");
 
@@ -48,38 +51,36 @@ const api = axios.create({
 
 async function testAuth() {
     try {
-        console.log("   Enviando request a /user...");
+        console.log("   Sending request to /user...");
         const response = await api.get("/user");
 
-        console.log("✅ ¡Autenticación exitosa!");
+        console.log("✅ Authentication successful!");
         console.log(`   Status: ${response.status}`);
         console.log(
-            `   Usuario: ${
-                response.data.display_name || response.data.username
-            }`
+            `   User: ${response.data.display_name || response.data.username}`
         );
         console.log(`   Account ID: ${response.data.account_id}`);
 
         if (config.workspace) {
-            console.log("\n🏢 Probando acceso al workspace...");
+            console.log("\n🏢 Testing workspace access...");
             try {
                 const wsResponse = await api.get(
                     `/workspaces/${config.workspace}`
                 );
-                console.log("✅ Acceso al workspace exitoso!");
+                console.log("✅ Workspace access successful!");
                 console.log(`   Workspace: ${wsResponse.data.name}`);
             } catch (wsError) {
                 console.error(
-                    "❌ Error accediendo al workspace:",
+                    "❌ Error accessing workspace:",
                     wsError.response?.status,
                     wsError.response?.statusText
                 );
             }
         }
 
-        console.log("\n🎉 ¡Todas las pruebas pasaron!");
+        console.log("\n🎉 All tests passed!");
     } catch (error) {
-        console.error("\n❌ Error de autenticación:");
+        console.error("\n❌ Authentication error:");
         if (error.response) {
             console.error(
                 `   Status: ${error.response.status} ${error.response.statusText}`
@@ -89,10 +90,10 @@ async function testAuth() {
             );
 
             if (error.response.status === 401) {
-                console.error("\n💡 Sugerencias para error 401:");
-                console.error("   - Verifica tu username y app password");
+                console.error("\n💡 Suggestions for 401 error:");
+                console.error("   - Check your username and app password");
                 console.error(
-                    "   - Asegúrate de que el app password tenga los permisos correctos"
+                    "   - Make sure the app password has the correct permissions"
                 );
             }
         } else {
