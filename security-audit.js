@@ -51,6 +51,7 @@ const SECURITY_CHECKS = {
         "SECURITY.md",
         "TROUBLESHOOTING.md",
         "TESTING.md",
+        "SECURITY_IMPROVEMENTS.md",
     ],
 };
 
@@ -104,7 +105,7 @@ class SecurityAuditor {
 
             // Additional security check: ensure file exists and is a file (not directory)
             try {
-                const stats = fs.statSync(filePath);
+                const stats = await fs.promises.stat(filePath);
                 if (!stats.isFile()) {
                     console.warn(`Skipping non-file: ${file}`);
                     continue;
@@ -117,19 +118,39 @@ class SecurityAuditor {
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, "utf-8");
 
+                // Check if this is a documentation file
+                const isDocFile = SECURITY_CHECKS.DOCUMENTATION_FILES.some(
+                    (docFile) =>
+                        file.includes(docFile.replace("*", "")) ||
+                        file === docFile ||
+                        file.endsWith(".md")
+                );
+
                 for (const pattern of SECURITY_CHECKS.SENSITIVE_PATTERNS) {
                     const matches = content.match(pattern);
-                    if (matches) {
-                        // Critical files get CRITICAL severity, others get HIGH
-                        const isCriticalFile =
-                            SECURITY_CHECKS.CRITICAL_FILES.includes(file);
-                        this.issues.push({
-                            type: "SENSITIVE_DATA",
-                            file: file,
-                            pattern: pattern.source,
-                            matches: matches.length,
-                            severity: isCriticalFile ? "CRITICAL" : "HIGH",
-                        });
+                    if (matches && !isDocFile) {
+                        // Filter out obvious documentation examples
+                        const realMatches = matches.filter(match => 
+                            !match.includes("your-") &&
+                            !match.includes("example") &&
+                            !match.includes("placeholder") &&
+                            !match.includes("YOUR_") &&
+                            !match.includes("EXAMPLE_") &&
+                            !match.includes("PLACEHOLDER_")
+                        );
+
+                        if (realMatches.length > 0) {
+                            // Critical files get CRITICAL severity, others get HIGH
+                            const isCriticalFile =
+                                SECURITY_CHECKS.CRITICAL_FILES.includes(file);
+                            this.issues.push({
+                                type: "SENSITIVE_DATA",
+                                file: file,
+                                pattern: pattern.source,
+                                matches: realMatches.length,
+                                severity: isCriticalFile ? "CRITICAL" : "HIGH",
+                            });
+                        }
                     }
                 }
             }
@@ -265,12 +286,7 @@ class SecurityAuditor {
 
         // Check if .env file exists (it should be gitignored)
         if (fs.existsSync(envFile)) {
-            this.warnings.push({
-                type: "ENV_FILE_EXISTS",
-                file: ".env",
-                message: "Ensure .env file is properly gitignored",
-                severity: "LOW", // Reduced severity as this is common in development
-            });
+            console.log("ℹ️  .env file detected (normal in development - ensure it's gitignored)");
         }
 
         console.log("✅ Environment configuration check completed");

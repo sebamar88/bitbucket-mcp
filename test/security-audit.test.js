@@ -26,18 +26,19 @@ const mockFileContent = {
     `,
 };
 
+const patterns = [
+    /password\s*=\s*['"]\w+['"]/gi,
+    /token\s*=\s*['"]\w+['"]/gi,
+    /secret\s*=\s*['"]\w+['"]/gi,
+    /key\s*=\s*['"]\w+['"]/gi,
+    /ATB{1,2}[A-Z0-9]{20,}/gi,
+    /ghp_[A-Za-z0-9]{36}/gi,
+];
+
 describe("Security Audit Script", () => {
     describe("Pattern Detection", () => {
         test("should detect hardcoded passwords", () => {
             const content = 'const password = "hardcodedpassword123";';
-            const patterns = [
-                /password\s*=\s*['"]\w+['"]/gi,
-                /token\s*=\s*['"]\w+['"]/gi,
-                /secret\s*=\s*['"]\w+['"]/gi,
-                /key\s*=\s*['"]\w+['"]/gi,
-                /ATB[A-Z0-9]{20,}/gi,
-                /ghp_[A-Za-z0-9]{36}/gi,
-            ];
 
             const found = patterns.some((pattern) => pattern.test(content));
             expect(found).toBe(true);
@@ -69,15 +70,6 @@ describe("Security Audit Script", () => {
 
     describe("File Security Analysis", () => {
         test("should identify safe content", () => {
-            const patterns = [
-                /password\s*=\s*['"]\w+['"]/gi,
-                /token\s*=\s*['"]\w+['"]/gi,
-                /secret\s*=\s*['"]\w+['"]/gi,
-                /key\s*=\s*['"]\w+['"]/gi,
-                /ATB[A-Z0-9]{20,}/gi,
-                /ghp_[A-Za-z0-9]{36}/gi,
-            ];
-
             const hasSensitiveData = patterns.some((pattern) =>
                 pattern.test(mockFileContent.safe)
             );
@@ -86,15 +78,6 @@ describe("Security Audit Script", () => {
         });
 
         test("should identify unsafe content", () => {
-            const patterns = [
-                /password\s*=\s*['"]\w+['"]/gi,
-                /token\s*=\s*['"]\w+['"]/gi,
-                /secret\s*=\s*['"]\w+['"]/gi,
-                /key\s*=\s*['"]\w+['"]/gi,
-                /ATB{1,2}[A-Z0-9]{20,}/gi,
-                /ghp_[A-Za-z0-9]{36}/gi,
-            ];
-
             const hasSensitiveData = patterns.some((pattern) =>
                 pattern.test(mockFileContent.unsafe)
             );

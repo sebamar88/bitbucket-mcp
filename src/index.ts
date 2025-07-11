@@ -8,7 +8,7 @@ import {
     ListToolsRequestSchema,
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 
 // Import modular components
 import { createBitbucketConfig, validateConfig } from "./config/bitbucket.js";
@@ -322,7 +322,7 @@ class BitbucketServer {
                     return result;
                 } catch (error) {
                     logger.error("Tool execution error", sanitizeError(error));
-                    if (axios.isAxiosError(error)) {
+                    if (isAxiosError(error)) {
                         // Never expose full error details that might contain sensitive data
                         const errorMessage =
                             error.response?.data?.error?.message ||
