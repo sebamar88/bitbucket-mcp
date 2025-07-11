@@ -75,7 +75,7 @@ describe("Security Audit Script", () => {
                 /token\s*=\s*['"]\w+['"]/gi,
                 /secret\s*=\s*['"]\w+['"]/gi,
                 /key\s*=\s*['"]\w+['"]/gi,
-                /ATB{1,2}[A-Z0-9]{20,}/gi,
+                /ATB[A-Z0-9]{20,}/gi,
                 /ghp_[A-Za-z0-9]{36}/gi,
             ];
 

@@ -15,6 +15,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import fg from "fast-glob";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,13 +81,13 @@ class SecurityAuditor {
         // Report results
         this.reportResults();
     }
-
     async checkSensitivePatterns() {
         console.log("📝 Checking for sensitive patterns in code...");
 
         const filesToCheck = SECURITY_CHECKS.FILES_TO_CHECK;
+        const expandedFiles = await fg(filesToCheck, { cwd: __dirname });
 
-        for (const file of filesToCheck) {
+        for (const file of expandedFiles) {
             const filePath = path.join(__dirname, file);
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, "utf-8");
