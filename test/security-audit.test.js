@@ -113,7 +113,12 @@ describe("Security Audit Script", () => {
             ];
 
             criticalFiles.forEach((file) => {
-                const filePath = path.join(__dirname, "..", file);
+                const filePath = path.resolve(__dirname, "..", file);
+                // Validate that the file path is within our project directory
+                const projectRoot = path.resolve(__dirname, "..");
+                if (!filePath.startsWith(projectRoot)) {
+                    throw new Error(`Invalid file path detected: ${file}`);
+                }
                 expect(fs.existsSync(filePath)).toBe(true);
             });
         });

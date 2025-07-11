@@ -88,7 +88,14 @@ class SecurityAuditor {
         const expandedFiles = await fg(filesToCheck, { cwd: __dirname });
 
         for (const file of expandedFiles) {
-            const filePath = path.join(__dirname, file);
+            const filePath = path.resolve(__dirname, file);
+            // Validate that the file path is within our project directory
+            if (!filePath.startsWith(__dirname)) {
+                console.warn(
+                    `Skipping file outside project directory: ${file}`
+                );
+                continue;
+            }
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, "utf-8");
 
@@ -117,7 +124,14 @@ class SecurityAuditor {
         console.log("📝 Checking critical files for security issues...");
 
         for (const file of SECURITY_CHECKS.CRITICAL_FILES) {
-            const filePath = path.join(__dirname, file);
+            const filePath = path.resolve(__dirname, file);
+            // Validate that the file path is within our project directory
+            if (!filePath.startsWith(__dirname)) {
+                console.warn(
+                    `Skipping file outside project directory: ${file}`
+                );
+                continue;
+            }
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, "utf-8");
 
@@ -194,8 +208,17 @@ class SecurityAuditor {
     async checkEnvironmentConfig() {
         console.log("📝 Checking environment configuration...");
 
-        const envExample = path.join(__dirname, ".env.example");
-        const envFile = path.join(__dirname, ".env");
+        const envExample = path.resolve(__dirname, ".env.example");
+        const envFile = path.resolve(__dirname, ".env");
+
+        // Validate file paths are within project directory
+        if (
+            !envExample.startsWith(__dirname) ||
+            !envFile.startsWith(__dirname)
+        ) {
+            console.warn("Invalid environment file paths detected");
+            return;
+        }
 
         // Check if .env.example exists and is safe
         if (fs.existsSync(envExample)) {
@@ -238,7 +261,12 @@ class SecurityAuditor {
     async checkLoggingConfig() {
         console.log("📝 Checking logging configuration...");
 
-        const indexFile = path.join(__dirname, "src/index.ts");
+        const indexFile = path.resolve(__dirname, "src/index.ts");
+        // Validate file path is within project directory
+        if (!indexFile.startsWith(__dirname)) {
+            console.warn("Invalid index file path detected");
+            return;
+        }
         if (fs.existsSync(indexFile)) {
             const content = fs.readFileSync(indexFile, "utf-8");
 
@@ -281,7 +309,12 @@ class SecurityAuditor {
     async checkGitignore() {
         console.log("📝 Checking .gitignore configuration...");
 
-        const gitignoreFile = path.join(__dirname, ".gitignore");
+        const gitignoreFile = path.resolve(__dirname, ".gitignore");
+        // Validate file path is within project directory
+        if (!gitignoreFile.startsWith(__dirname)) {
+            console.warn("Invalid gitignore file path detected");
+            return;
+        }
         if (fs.existsSync(gitignoreFile)) {
             const content = fs.readFileSync(gitignoreFile, "utf-8");
 
