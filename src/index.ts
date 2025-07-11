@@ -304,7 +304,13 @@ class BitbucketServer {
                 const { name, arguments: toolArgs } = request.params;
 
                 try {
-                    const handler = this.toolHandlers[name];
+                    // Secure property access to prevent prototype pollution
+                    const handler = Object.prototype.hasOwnProperty.call(
+                        this.toolHandlers,
+                        name
+                    )
+                        ? this.toolHandlers[name]
+                        : undefined;
                     if (!handler) {
                         throw new McpError(
                             ErrorCode.MethodNotFound,
