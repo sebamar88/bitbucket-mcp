@@ -131,123 +131,6 @@ interface BitbucketLink {
     name?: string;
 }
 
-/**
- * Represents a Bitbucket pull request
- */
-interface BitbucketPullRequest {
-    id: number;
-    title: string;
-    description: string;
-    state: "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED";
-    author: BitbucketAccount;
-    source: BitbucketBranchReference;
-    destination: BitbucketBranchReference;
-    created_on: string;
-    updated_on: string;
-    closed_on?: string;
-    comment_count: number;
-    task_count: number;
-    close_source_branch: boolean;
-    reviewers: BitbucketAccount[];
-    participants: BitbucketParticipant[];
-    links: Record<string, BitbucketLink[]>;
-    summary?: {
-        raw: string;
-        markup: string;
-        html: string;
-    };
-}
-
-/**
- * Represents a branch reference in a pull request
- */
-interface BitbucketBranchReference {
-    branch: {
-        name: string;
-    };
-    commit: {
-        hash: string;
-    };
-    repository: BitbucketRepository;
-}
-
-/**
- * Represents a participant in a pull request
- */
-interface BitbucketParticipant {
-    user: BitbucketAccount;
-    role: "PARTICIPANT" | "REVIEWER";
-    approved: boolean;
-    state?: "approved" | "changes_requested" | null;
-    participated_on: string;
-}
-
-/**
- * Represents a Bitbucket branching model
- */
-interface BitbucketBranchingModel {
-    type: "branching_model";
-    development: {
-        name: string;
-        branch?: BitbucketBranch;
-        use_mainbranch: boolean;
-    };
-    production?: {
-        name: string;
-        branch?: BitbucketBranch;
-        use_mainbranch: boolean;
-    };
-    branch_types: Array<{
-        kind: string;
-        prefix: string;
-    }>;
-    links: Record<string, BitbucketLink[]>;
-}
-
-/**
- * Represents a Bitbucket branching model settings
- */
-interface BitbucketBranchingModelSettings {
-    type: "branching_model_settings";
-    development: {
-        name: string;
-        use_mainbranch: boolean;
-        is_valid?: boolean;
-    };
-    production: {
-        name: string;
-        use_mainbranch: boolean;
-        enabled: boolean;
-        is_valid?: boolean;
-    };
-    branch_types: Array<{
-        kind: string;
-        prefix: string;
-        enabled: boolean;
-    }>;
-    links: Record<string, BitbucketLink[]>;
-}
-
-/**
- * Represents a Bitbucket project branching model
- */
-interface BitbucketProjectBranchingModel {
-    type: "project_branching_model";
-    development: {
-        name: string;
-        use_mainbranch: boolean;
-    };
-    production?: {
-        name: string;
-        use_mainbranch: boolean;
-    };
-    branch_types: Array<{
-        kind: string;
-        prefix: string;
-    }>;
-    links: Record<string, BitbucketLink[]>;
-}
-
 interface BitbucketConfig {
     baseUrl: string;
     token?: string;
@@ -1475,7 +1358,7 @@ class BitbucketServer {
                 pull_request_id,
             });
 
-            const response = await this.api.delete(
+            await this.api.delete(
                 `/repositories/${workspace}/${repo_slug}/pullrequests/${pull_request_id}/approve`
             );
 

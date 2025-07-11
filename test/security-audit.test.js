@@ -1,10 +1,9 @@
 /**
  * Unit tests for security-audit.js
  */
-
-const { describe, test, expect, beforeEach } = require("@jest/globals");
-const fs = require("fs");
-const path = require("path");
+import { describe, test, expect } from "@jest/globals";
+import fs from "fs";
+import path from "path";
 
 // Mock data for testing
 const mockFileContent = {
