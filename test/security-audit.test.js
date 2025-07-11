@@ -113,12 +113,25 @@ describe("Security Audit Script", () => {
             ];
 
             criticalFiles.forEach((file) => {
-                const filePath = path.resolve(__dirname, "..", file);
+                // Sanitize and validate file path to prevent directory traversal
+                const sanitizedFile = path
+                    .normalize(file)
+                    .replace(/^(\.\.(\/|\\|$))+/, "");
+                const filePath = path.resolve(__dirname, "..", sanitizedFile);
+
                 // Validate that the file path is within our project directory
                 const projectRoot = path.resolve(__dirname, "..");
                 if (!filePath.startsWith(projectRoot)) {
                     throw new Error(`Invalid file path detected: ${file}`);
                 }
+
+                // Additional security check: ensure path doesn't contain suspicious patterns
+                if (sanitizedFile !== file) {
+                    throw new Error(
+                        `Potentially malicious file path detected: ${file}`
+                    );
+                }
+
                 expect(fs.existsSync(filePath)).toBe(true);
             });
         });

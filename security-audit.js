@@ -88,7 +88,12 @@ class SecurityAuditor {
         const expandedFiles = await fg(filesToCheck, { cwd: __dirname });
 
         for (const file of expandedFiles) {
-            const filePath = path.resolve(__dirname, file);
+            // Sanitize and validate file path to prevent directory traversal
+            const sanitizedFile = path
+                .normalize(file)
+                .replace(/^(\.\.(\/|\\|$))+/, "");
+            const filePath = path.resolve(__dirname, sanitizedFile);
+
             // Validate that the file path is within our project directory
             if (!filePath.startsWith(__dirname)) {
                 console.warn(
@@ -96,6 +101,19 @@ class SecurityAuditor {
                 );
                 continue;
             }
+
+            // Additional security check: ensure file exists and is a file (not directory)
+            try {
+                const stats = fs.statSync(filePath);
+                if (!stats.isFile()) {
+                    console.warn(`Skipping non-file: ${file}`);
+                    continue;
+                }
+            } catch (error) {
+                console.warn(`File access error for ${file}: ${error.message}`);
+                continue;
+            }
+
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, "utf-8");
 
