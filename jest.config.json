@@ -18,9 +18,7 @@
         ],
         "^.+\\.js$": ["babel-jest"]
     },
-    "transformIgnorePatterns": [
-        "node_modules/(?!(.*\\.mjs$))"
-    ],
+    "transformIgnorePatterns": ["node_modules/(?!(.*\\.mjs$))"],
     "testEnvironment": "node",
     "testMatch": ["**/test/**/*.test.{js,ts}", "**/__tests__/**/*.{js,ts}"],
     "collectCoverageFrom": [

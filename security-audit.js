@@ -130,13 +130,14 @@ class SecurityAuditor {
                     const matches = content.match(pattern);
                     if (matches && !isDocFile) {
                         // Filter out obvious documentation examples
-                        const realMatches = matches.filter(match => 
-                            !match.includes("your-") &&
-                            !match.includes("example") &&
-                            !match.includes("placeholder") &&
-                            !match.includes("YOUR_") &&
-                            !match.includes("EXAMPLE_") &&
-                            !match.includes("PLACEHOLDER_")
+                        const realMatches = matches.filter(
+                            (match) =>
+                                !match.includes("your-") &&
+                                !match.includes("example") &&
+                                !match.includes("placeholder") &&
+                                !match.includes("YOUR_") &&
+                                !match.includes("EXAMPLE_") &&
+                                !match.includes("PLACEHOLDER_")
                         );
 
                         if (realMatches.length > 0) {
@@ -286,7 +287,9 @@ class SecurityAuditor {
 
         // Check if .env file exists (it should be gitignored)
         if (fs.existsSync(envFile)) {
-            console.log("ℹ️  .env file detected (normal in development - ensure it's gitignored)");
+            console.log(
+                "ℹ️  .env file detected (normal in development - ensure it's gitignored)"
+            );
         }
 
         console.log("✅ Environment configuration check completed");
