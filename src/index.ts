@@ -3,6 +3,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
     CallToolRequestSchema,
+    CallToolResult,
     ErrorCode,
     ListToolsRequestSchema,
     McpError,
@@ -16,14 +17,20 @@ import { RepositoryService } from "./services/repository.js";
 import { PullRequestService } from "./services/pullrequest.js";
 import { BranchingModelService } from "./services/branchingmodel.js";
 import { TOOL_DEFINITIONS } from "./schemas/tools.js";
-import { ToolHandlerMap, BitbucketConfig } from "./types/index.js";
+import {
+    ToolHandlerMap,
+    BitbucketConfig,
+    RepositoryArgs,
+    PullRequestArgs,
+    BranchingModelArgs,
+} from "./types/index.js";
 
 /**
  * Modular Bitbucket MCP Server
- * 
+ *
  * This server has been refactored from a monolithic structure to improve
  * maintainability, readability, and testability. Key improvements:
- * 
+ *
  * - Separated concerns into dedicated service classes
  * - Extracted configuration and logging utilities
  * - Centralized tool definitions and schemas
@@ -33,7 +40,7 @@ class BitbucketServer {
     private readonly server: Server;
     private readonly config: BitbucketConfig;
     private readonly toolHandlers: ToolHandlerMap;
-    
+
     // Service instances
     private readonly repositoryService: RepositoryService;
     private readonly pullRequestService: PullRequestService;
@@ -84,161 +91,203 @@ class BitbucketServer {
     private initializeToolHandlers(): ToolHandlerMap {
         return {
             // Repository operations
-            listRepositories: async (args) =>
-                this.repositoryService.listRepositories(
-                    args.workspace as string,
-                    args.limit as number
-                ),
+            listRepositories: async (args: unknown) => {
+                const repoArgs = args as RepositoryArgs;
+                return this.repositoryService.listRepositories(
+                    repoArgs.workspace,
+                    repoArgs.limit
+                );
+            },
 
-            getRepository: async (args) =>
-                this.repositoryService.getRepository(
-                    args.workspace as string,
-                    args.repo_slug as string
-                ),
+            getRepository: async (args: unknown) => {
+                const repoArgs = args as RepositoryArgs;
+                return this.repositoryService.getRepository(
+                    repoArgs.workspace!,
+                    repoArgs.repo_slug!
+                );
+            },
 
             // Pull request operations
-            getPullRequests: async (args) =>
-                this.pullRequestService.getPullRequests(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.state as "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED",
-                    args.limit as number
-                ),
+            getPullRequests: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequests(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.state,
+                    prArgs.limit
+                );
+            },
 
-            createPullRequest: async (args) =>
-                this.pullRequestService.createPullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.title as string,
-                    args.description as string,
-                    args.sourceBranch as string,
-                    args.targetBranch as string,
-                    args.reviewers as string[]
-                ),
+            createPullRequest: async (args: unknown) => {
+                const prArgs = args as unknown as PullRequestArgs;
+                return this.pullRequestService.createPullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.title!,
+                    prArgs.description!,
+                    prArgs.sourceBranch!,
+                    prArgs.targetBranch!,
+                    prArgs.reviewers
+                );
+            },
 
-            getPullRequest: async (args) =>
-                this.pullRequestService.getPullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            getPullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            updatePullRequest: async (args) =>
-                this.pullRequestService.updatePullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string,
-                    args.title as string,
-                    args.description as string
-                ),
+            updatePullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.updatePullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!,
+                    prArgs.title,
+                    prArgs.description
+                );
+            },
 
-            getPullRequestActivity: async (args) =>
-                this.pullRequestService.getPullRequestActivity(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            getPullRequestActivity: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequestActivity(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            approvePullRequest: async (args) =>
-                this.pullRequestService.approvePullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            approvePullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.approvePullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            unapprovePullRequest: async (args) =>
-                this.pullRequestService.unapprovePullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            unapprovePullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.unapprovePullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            declinePullRequest: async (args) =>
-                this.pullRequestService.declinePullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string,
-                    args.message as string
-                ),
+            declinePullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.declinePullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!,
+                    prArgs.message
+                );
+            },
 
-            mergePullRequest: async (args) =>
-                this.pullRequestService.mergePullRequest(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string,
-                    args.message as string,
-                    args.strategy as "merge-commit" | "squash" | "fast-forward"
-                ),
+            mergePullRequest: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.mergePullRequest(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!,
+                    prArgs.message,
+                    prArgs.strategy
+                );
+            },
 
-            getPullRequestComments: async (args) =>
-                this.pullRequestService.getPullRequestComments(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            getPullRequestComments: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequestComments(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            getPullRequestDiff: async (args) =>
-                this.pullRequestService.getPullRequestDiff(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            getPullRequestDiff: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequestDiff(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
-            getPullRequestCommits: async (args) =>
-                this.pullRequestService.getPullRequestCommits(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.pull_request_id as string
-                ),
+            getPullRequestCommits: async (args: unknown) => {
+                const prArgs = args as PullRequestArgs;
+                return this.pullRequestService.getPullRequestCommits(
+                    prArgs.workspace,
+                    prArgs.repo_slug,
+                    prArgs.pull_request_id!
+                );
+            },
 
             // Branching model operations
-            getRepositoryBranchingModel: async (args) =>
-                this.branchingModelService.getRepositoryBranchingModel(
-                    args.workspace as string,
-                    args.repo_slug as string
-                ),
+            getRepositoryBranchingModel: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.getRepositoryBranchingModel(
+                    bmArgs.workspace,
+                    bmArgs.repo_slug!
+                );
+            },
 
-            getRepositoryBranchingModelSettings: async (args) =>
-                this.branchingModelService.getRepositoryBranchingModelSettings(
-                    args.workspace as string,
-                    args.repo_slug as string
-                ),
+            getRepositoryBranchingModelSettings: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.getRepositoryBranchingModelSettings(
+                    bmArgs.workspace,
+                    bmArgs.repo_slug!
+                );
+            },
 
-            updateRepositoryBranchingModelSettings: async (args) =>
-                this.branchingModelService.updateRepositoryBranchingModelSettings(
-                    args.workspace as string,
-                    args.repo_slug as string,
-                    args.development as Record<string, any>,
-                    args.production as Record<string, any>,
-                    args.branch_types as Array<Record<string, any>>
-                ),
+            updateRepositoryBranchingModelSettings: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.updateRepositoryBranchingModelSettings(
+                    bmArgs.workspace,
+                    bmArgs.repo_slug!,
+                    bmArgs.development,
+                    bmArgs.production,
+                    bmArgs.branch_types
+                );
+            },
 
-            getEffectiveRepositoryBranchingModel: async (args) =>
-                this.branchingModelService.getEffectiveRepositoryBranchingModel(
-                    args.workspace as string,
-                    args.repo_slug as string
-                ),
+            getEffectiveRepositoryBranchingModel: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.getEffectiveRepositoryBranchingModel(
+                    bmArgs.workspace,
+                    bmArgs.repo_slug!
+                );
+            },
 
-            getProjectBranchingModel: async (args) =>
-                this.branchingModelService.getProjectBranchingModel(
-                    args.workspace as string,
-                    args.project_key as string
-                ),
+            getProjectBranchingModel: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.getProjectBranchingModel(
+                    bmArgs.workspace,
+                    bmArgs.project_key!
+                );
+            },
 
-            getProjectBranchingModelSettings: async (args) =>
-                this.branchingModelService.getProjectBranchingModelSettings(
-                    args.workspace as string,
-                    args.project_key as string
-                ),
+            getProjectBranchingModelSettings: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.getProjectBranchingModelSettings(
+                    bmArgs.workspace,
+                    bmArgs.project_key!
+                );
+            },
 
-            updateProjectBranchingModelSettings: async (args) =>
-                this.branchingModelService.updateProjectBranchingModelSettings(
-                    args.workspace as string,
-                    args.project_key as string,
-                    args.development as Record<string, any>,
-                    args.production as Record<string, any>,
-                    args.branch_types as Array<Record<string, any>>
-                ),
+            updateProjectBranchingModelSettings: async (args: unknown) => {
+                const bmArgs = args as BranchingModelArgs;
+                return this.branchingModelService.updateProjectBranchingModelSettings(
+                    bmArgs.workspace,
+                    bmArgs.project_key!,
+                    bmArgs.development,
+                    bmArgs.production,
+                    bmArgs.branch_types
+                );
+            },
         };
     }
 
@@ -252,7 +301,7 @@ class BitbucketServer {
         this.server.setRequestHandler(
             CallToolRequestSchema,
             async (request) => {
-                const { name, arguments: args } = request.params;
+                const { name, arguments: toolArgs } = request.params;
 
                 try {
                     const handler = this.toolHandlers[name];
@@ -263,12 +312,10 @@ class BitbucketServer {
                         );
                     }
 
-                    return await handler(args ?? {});
+                    const result = await handler(toolArgs ?? {});
+                    return result;
                 } catch (error) {
-                    logger.error(
-                        "Tool execution error",
-                        sanitizeError(error)
-                    );
+                    logger.error("Tool execution error", sanitizeError(error));
                     if (axios.isAxiosError(error)) {
                         // Never expose full error details that might contain sensitive data
                         const errorMessage =

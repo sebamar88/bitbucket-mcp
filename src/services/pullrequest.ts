@@ -1,6 +1,9 @@
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import {
+    ErrorCode,
+    McpError,
+    CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { BaseService } from "./base.js";
-import { McpResponse } from "../types/index.js";
 import { logger, sanitizeError } from "../utils/logger.js";
 
 export class PullRequestService extends BaseService {
@@ -9,7 +12,7 @@ export class PullRequestService extends BaseService {
         repo_slug: string,
         state?: "OPEN" | "MERGED" | "DECLINED" | "SUPERSEDED",
         limit: number = 10
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull requests", {
                 workspace,
@@ -59,7 +62,7 @@ export class PullRequestService extends BaseService {
         sourceBranch: string,
         targetBranch: string,
         reviewers?: string[]
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Creating Bitbucket pull request", {
                 workspace,
@@ -123,7 +126,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull request details", {
                 workspace,
@@ -165,7 +168,7 @@ export class PullRequestService extends BaseService {
         pull_request_id: string,
         title?: string,
         description?: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Updating Bitbucket pull request", {
                 workspace,
@@ -211,7 +214,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull request activity", {
                 workspace,
@@ -251,7 +254,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Approving Bitbucket pull request", {
                 workspace,
@@ -291,7 +294,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Unapproving Bitbucket pull request", {
                 workspace,
@@ -332,7 +335,7 @@ export class PullRequestService extends BaseService {
         repo_slug: string,
         pull_request_id: string,
         message?: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Declining Bitbucket pull request", {
                 workspace,
@@ -378,7 +381,7 @@ export class PullRequestService extends BaseService {
         pull_request_id: string,
         message?: string,
         strategy?: "merge-commit" | "squash" | "fast-forward"
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Merging Bitbucket pull request", {
                 workspace,
@@ -425,7 +428,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull request comments", {
                 workspace,
@@ -465,7 +468,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull request diff", {
                 workspace,
@@ -511,7 +514,7 @@ export class PullRequestService extends BaseService {
         workspace: string,
         repo_slug: string,
         pull_request_id: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket pull request commits", {
                 workspace,

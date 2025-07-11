@@ -1,13 +1,16 @@
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import {
+    ErrorCode,
+    McpError,
+    CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { BaseService } from "./base.js";
-import { McpResponse } from "../types/index.js";
 import { logger, sanitizeError } from "../utils/logger.js";
 
 export class BranchingModelService extends BaseService {
     async getRepositoryBranchingModel(
         workspace: string,
         repo_slug: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting repository branching model", {
                 workspace,
@@ -44,7 +47,7 @@ export class BranchingModelService extends BaseService {
     async getRepositoryBranchingModelSettings(
         workspace: string,
         repo_slug: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting repository branching model settings", {
                 workspace,
@@ -84,7 +87,7 @@ export class BranchingModelService extends BaseService {
         development?: Record<string, any>,
         production?: Record<string, any>,
         branch_types?: Array<Record<string, any>>
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Updating repository branching model settings", {
                 workspace,
@@ -131,7 +134,7 @@ export class BranchingModelService extends BaseService {
     async getEffectiveRepositoryBranchingModel(
         workspace: string,
         repo_slug: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting effective repository branching model", {
                 workspace,
@@ -168,7 +171,7 @@ export class BranchingModelService extends BaseService {
     async getProjectBranchingModel(
         workspace: string,
         project_key: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting project branching model", {
                 workspace,
@@ -205,7 +208,7 @@ export class BranchingModelService extends BaseService {
     async getProjectBranchingModelSettings(
         workspace: string,
         project_key: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting project branching model settings", {
                 workspace,
@@ -245,7 +248,7 @@ export class BranchingModelService extends BaseService {
         development?: Record<string, any>,
         production?: Record<string, any>,
         branch_types?: Array<Record<string, any>>
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Updating project branching model settings", {
                 workspace,

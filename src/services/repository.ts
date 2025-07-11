@@ -1,13 +1,16 @@
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import {
+    ErrorCode,
+    McpError,
+    CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { BaseService } from "./base.js";
-import { McpResponse } from "../types/index.js";
 import { logger, sanitizeError } from "../utils/logger.js";
 
 export class RepositoryService extends BaseService {
     async listRepositories(
         workspace?: string,
         limit: number = 10
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             // Use default workspace if not provided
             const wsName = workspace || this.config.defaultWorkspace;
@@ -53,7 +56,7 @@ export class RepositoryService extends BaseService {
     async getRepository(
         workspace: string,
         repo_slug: string
-    ): Promise<McpResponse> {
+    ): Promise<CallToolResult> {
         try {
             logger.info("Getting Bitbucket repository info", {
                 workspace,
